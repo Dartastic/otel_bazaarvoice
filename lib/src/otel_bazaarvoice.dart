@@ -2,7 +2,6 @@
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
 import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
-import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_bazaarvoice_suppression.dart';
 
@@ -50,48 +49,61 @@ Future<T> tracedBazaarvoice<T>({
   final t = tracer ?? OTel.tracerProvider().getTracer('otel_bazaarvoice');
   final span = t.startSpan('bazaarvoice $operation', kind: SpanKind.client);
   try {
-    span.setStringAttribute('rpc.system', 'bazaarvoice');
+    span.addAttributes(
+        OTel.attributes([OTel.attributeString('rpc.system', 'bazaarvoice')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.clientName != null) {
-        span.setStringAttribute('bazaarvoice.client', res.clientName!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('bazaarvoice.client', res.clientName!)]));
       }
       if (res.productId != null) {
-        span.setStringAttribute('bazaarvoice.product.id', res.productId!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('bazaarvoice.product.id', res.productId!)]));
       }
       if (res.reviewId != null) {
-        span.setStringAttribute('bazaarvoice.review.id', res.reviewId!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('bazaarvoice.review.id', res.reviewId!)]));
       }
       if (res.rating != null) {
-        span.setIntAttribute('bazaarvoice.review.rating', res.rating!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('bazaarvoice.review.rating', res.rating!)]));
       }
       if (res.authorId != null) {
-        span.setStringAttribute('bazaarvoice.author.id', res.authorId!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('bazaarvoice.author.id', res.authorId!)]));
       }
       if (res.contentType != null) {
-        span.setStringAttribute('bazaarvoice.content.type', res.contentType!);
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString('bazaarvoice.content.type', res.contentType!)
+        ]));
       }
       if (res.moderationStatus != null) {
-        span.setStringAttribute(
-          'bazaarvoice.moderation.status',
-          res.moderationStatus!,
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            'bazaarvoice.moderation.status',
+            res.moderationStatus!,
+          )
+        ]));
       }
       if (res.statusCode != null) {
-        span.setIntAttribute('http.response.status_code', res.statusCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
       }
       if (res.errorCode != null) {
-        span.setStringAttribute('bazaarvoice.error.code', res.errorCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('bazaarvoice.error.code', res.errorCode!)]));
       }
-      final fail =
-          res.errorCode != null ||
+      final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.setStringAttribute(
-          ErrorResource.errorType.key,
-          res.errorCode ?? 'bazaarvoice.error',
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            ErrorResource.errorType.key,
+            res.errorCode ?? 'bazaarvoice.error',
+          )
+        ]));
         span.setStatus(SpanStatusCode.Error, res.errorMessage);
       }
     }
