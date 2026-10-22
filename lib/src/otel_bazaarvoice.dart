@@ -1,11 +1,12 @@
-// Licensed under the Dartastic Pro Software License Agreement.
+// Licensed under the Apache License, Version 2.0
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
-import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
+import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_bazaarvoice_suppression.dart';
 
 class BazaarvoiceResult {
+  /// Creates a result.
   const BazaarvoiceResult({
     this.clientName,
     this.productId,
@@ -31,8 +32,13 @@ class BazaarvoiceResult {
   final String? errorMessage;
 }
 
+/// What a traced call returned: the value for the caller plus fields
+/// recorded on the span.
 class BazaarvoiceCallResult<T> {
+  /// Creates a call result.
   const BazaarvoiceCallResult({required this.value, this.result});
+
+  /// The value returned to the caller.
   final T value;
   final BazaarvoiceResult? result;
 }
@@ -40,67 +46,70 @@ class BazaarvoiceCallResult<T> {
 Future<T> tracedBazaarvoice<T>({
   required String operation,
   required Future<BazaarvoiceCallResult<T>> Function() invoke,
-  Tracer? tracer,
+  APITracer? tracer,
 }) async {
   if (bazaarvoiceInstrumentationSuppressed()) {
     final r = await invoke();
     return r.value;
   }
-  final t = tracer ?? OTel.tracerProvider().getTracer('otel_bazaarvoice');
+  final t = tracer ?? OTelAPI.tracerProvider().getTracer('otel_bazaarvoice');
   final span = t.startSpan('bazaarvoice $operation', kind: SpanKind.client);
   try {
-    span.addAttributes(
-        OTel.attributes([OTel.attributeString('rpc.system', 'bazaarvoice')]));
+    span.addAttributes(OTelAPI.attributes(
+        [OTelAPI.attributeString('rpc.system', 'bazaarvoice')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.clientName != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('bazaarvoice.client', res.clientName!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('bazaarvoice.client', res.clientName!)]));
       }
       if (res.productId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('bazaarvoice.product.id', res.productId!)]));
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString('bazaarvoice.product.id', res.productId!)
+        ]));
       }
       if (res.reviewId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('bazaarvoice.review.id', res.reviewId!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('bazaarvoice.review.id', res.reviewId!)]));
       }
       if (res.rating != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeInt('bazaarvoice.review.rating', res.rating!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeInt('bazaarvoice.review.rating', res.rating!)]));
       }
       if (res.authorId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('bazaarvoice.author.id', res.authorId!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('bazaarvoice.author.id', res.authorId!)]));
       }
       if (res.contentType != null) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString('bazaarvoice.content.type', res.contentType!)
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString('bazaarvoice.content.type', res.contentType!)
         ]));
       }
       if (res.moderationStatus != null) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString(
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString(
             'bazaarvoice.moderation.status',
             res.moderationStatus!,
           )
         ]));
       }
       if (res.statusCode != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeInt('http.response.status_code', res.statusCode!)
+        ]));
       }
       if (res.errorCode != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('bazaarvoice.error.code', res.errorCode!)]));
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString('bazaarvoice.error.code', res.errorCode!)
+        ]));
       }
       final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString(
-            ErrorResource.errorType.key,
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString(
+            ErrorAttributes.errorType.key,
             res.errorCode ?? 'bazaarvoice.error',
           )
         ]));
